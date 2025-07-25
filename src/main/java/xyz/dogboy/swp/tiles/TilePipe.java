@@ -21,8 +21,8 @@ import net.minecraftforge.fluids.capability.FluidTankProperties;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidTankProperties;
 
+import xyz.dogboy.swp.Utils;
 import xyz.dogboy.swp.blocks.BlockWoodenVariation;
-import xyz.dogboy.swp.client.ClientProxy;
 import xyz.dogboy.swp.config.SWPConfig;
 
 public class TilePipe extends PersistantSyncableTileEntity implements ITickable, IFluidHandler, WoodenVariationProvider {
@@ -35,7 +35,7 @@ public class TilePipe extends PersistantSyncableTileEntity implements ITickable,
 
     @Override
     public void update() {
-        if (Block.getBlockFromItem(this.getBaseBlock().getItem()) != Blocks.STONE && this.fluid != null && this.fluid.getTemperature() >= 550) {
+        if (this.fluid != null && this.fluid.getTemperature() >= 550 && Utils.isBurnable(this.getBaseBlock())) {
             this.getWorld().setBlockState(this.getPos(), Blocks.FIRE.getDefaultState());
             return;
         }
@@ -43,38 +43,29 @@ public class TilePipe extends PersistantSyncableTileEntity implements ITickable,
         for (EnumFacing facing : EnumFacing.values()) {
             BlockPos pos = this.getPos().offset(facing);
             TileEntity tileEntity = this.getWorld().getTileEntity(pos);
-
             if (!this.canConnectTo(tileEntity, facing, false)) {
                 continue;
             }
-
             IFluidHandler fluidHandler = tileEntity.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, facing.getOpposite());
             if (fluidHandler == null) {
                 continue;
             }
-
             boolean isPipe = tileEntity instanceof TilePipe;
-
             if (this.extraction && !isPipe) {
                 if (tileEntity instanceof TilePump) {
                     continue;
                 }
-
                 int freeSpace = SWPConfig.internalVolume - this.amount;
                 if (freeSpace <= 0) {
                     continue;
                 }
-
                 FluidStack drainableFluid = this.fluid == null
                         ? fluidHandler.drain(Math.min(SWPConfig.transferRate, freeSpace), true)
                         : fluidHandler.drain(new FluidStack(this.fluid, Math.min(SWPConfig.transferRate, freeSpace)), true);
-
                 if (drainableFluid == null || drainableFluid.amount <= 0) {
                     continue;
                 }
-
                 this.amount += drainableFluid.amount;
-
                 if (this.fluid == null) {
                     this.fluid = drainableFluid.getFluid();
                 }
@@ -82,11 +73,9 @@ public class TilePipe extends PersistantSyncableTileEntity implements ITickable,
                 if (this.fluid == null || this.amount <= 0) {
                     continue;
                 }
-
                 if (isPipe && ((TilePipe) tileEntity).amount > this.amount) {
                     continue;
                 }
-
                 this.amount -= fluidHandler.fill(new FluidStack(this.fluid, Math.min(SWPConfig.transferRate, this.amount)), true);
             }
         }
@@ -96,7 +85,6 @@ public class TilePipe extends PersistantSyncableTileEntity implements ITickable,
         if (this.amount <= 0) {
             return null;
         }
-
         return new FluidStack(this.fluid, this.amount);
     }
 
@@ -250,7 +238,7 @@ public class TilePipe extends PersistantSyncableTileEntity implements ITickable,
             if (!stack.isEmpty()) {
                 Block block = Block.getBlockFromItem(stack.getItem());
                 if (block != Blocks.AIR) {
-                    texture = ClientProxy.getTextureFromBlock(block, stack.getItemDamage());
+                    texture = Utils.getTextureFromBlock(block, stack.getItemDamage());
                     this.getTileData().setString("Texture", texture);
                 }
             }
@@ -267,26 +255,19 @@ public class TilePipe extends PersistantSyncableTileEntity implements ITickable,
         if (tileEntity == null) {
             return false;
         }
-
         if (tileEntity instanceof TilePump) {
             return direction == EnumFacing.DOWN && !excludePipe;
         }
-
         if (tileEntity instanceof TilePipe) {
             if (excludePipe) {
                 return false;
             }
-
             TilePipe otherPipe = (TilePipe) tileEntity;
-            Item stoneItem = Item.getItemFromBlock(Blocks.STONE);
-
             if (SWPConfig.variantInterconnection) {
-                return (otherPipe.getBaseBlock().getItem() == stoneItem) == (this.getBaseBlock().getItem() == stoneItem);
+                return Utils.isBurnable(otherPipe.getBaseBlock()) == Utils.isBurnable(this.getBaseBlock());
             }
-
             return otherPipe.getBaseBlock().isItemEqual(this.getBaseBlock());
         }
-
         return tileEntity.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, direction.getOpposite());
     }
 

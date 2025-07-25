@@ -15,6 +15,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import xyz.dogboy.swp.Registry;
+import xyz.dogboy.swp.Utils;
 import xyz.dogboy.swp.blocks.BlockPipe;
 
 public class ItemBlockPipe extends ItemBlockWoodenVariation {
@@ -40,7 +41,7 @@ public class ItemBlockPipe extends ItemBlockWoodenVariation {
         super.addInformation(stack, worldIn, tooltip, flagIn);
         tooltip.add("");
 
-        if (Block.getBlockFromItem(this.getBaseBlock(stack).getItem()) != Blocks.STONE) {
+        if (Utils.isBurnable(this.getBaseBlock(stack))) {
             tooltip.add(I18n.format("simplewoodenpipes.tooltip.pipe.low_temp_only"));
         }
 

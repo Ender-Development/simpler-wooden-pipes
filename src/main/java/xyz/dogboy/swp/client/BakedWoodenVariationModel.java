@@ -1,4 +1,4 @@
-package xyz.dogboy.swp.client.model;
+package xyz.dogboy.swp.client;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -30,12 +30,11 @@ import net.minecraftforge.common.property.IExtendedBlockState;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import xyz.dogboy.swp.Utils;
 import xyz.dogboy.swp.blocks.BlockPipe;
-import xyz.dogboy.swp.client.ClientProxy;
 
 @SideOnly(Side.CLIENT)
 public class BakedWoodenVariationModel extends BakedModelWrapper<IBakedModel> {
-
     private final Map<String, IBakedModel> cache = Maps.newHashMap();
     private final List<String> replacedTextures;
     private final IModel model;
@@ -53,8 +52,8 @@ public class BakedWoodenVariationModel extends BakedModelWrapper<IBakedModel> {
     protected IBakedModel getActualModel(String texture) {
         IBakedModel bakedModel = this.originalModel;
 
-        if(texture != null) {
-            if(this.cache.containsKey(texture)) {
+        if (texture != null) {
+            if (this.cache.containsKey(texture)) {
                 bakedModel = this.cache.get(texture);
             } else if (this.model != null) {
                 ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
@@ -68,7 +67,6 @@ public class BakedWoodenVariationModel extends BakedModelWrapper<IBakedModel> {
                 this.cache.put(texture, bakedModel);
             }
         }
-
         return bakedModel;
     }
 
@@ -86,30 +84,4 @@ public class BakedWoodenVariationModel extends BakedModelWrapper<IBakedModel> {
     public ItemOverrideList getOverrides() {
         return WoodenVariationItemOverrideList.instance;
     }
-
-    private static class WoodenVariationItemOverrideList extends ItemOverrideList {
-        private static final WoodenVariationItemOverrideList instance = new WoodenVariationItemOverrideList();
-
-        public WoodenVariationItemOverrideList() {
-            super(ImmutableList.of());
-        }
-
-        @Override
-        public IBakedModel handleItemState(IBakedModel originalModel, ItemStack stack, @Nullable World world, @Nullable EntityLivingBase entity) {
-            if (stack.hasTagCompound()) {
-                ItemStack baseBlock = new ItemStack(stack.getTagCompound().getCompoundTag("BaseBlock"));
-                if (!baseBlock.isEmpty()) {
-                    Block block = Block.getBlockFromItem(baseBlock.getItem());
-                    if (block != Blocks.AIR) {
-                        String texture = ClientProxy.getTextureFromBlock(block, baseBlock.getItemDamage());
-                        return ((BakedWoodenVariationModel) originalModel).getActualModel(texture);
-                    }
-                }
-            }
-
-            return originalModel;
-        }
-
-    }
-
 }
