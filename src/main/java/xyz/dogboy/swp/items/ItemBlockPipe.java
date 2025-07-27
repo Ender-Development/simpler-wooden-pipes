@@ -17,6 +17,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import xyz.dogboy.swp.Registry;
 import xyz.dogboy.swp.Utils;
 import xyz.dogboy.swp.blocks.BlockPipe;
+import xyz.dogboy.swp.config.SWPConfig;
 
 public class ItemBlockPipe extends ItemBlockWoodenVariation {
 
@@ -28,7 +29,7 @@ public class ItemBlockPipe extends ItemBlockWoodenVariation {
     public void getSubItems(CreativeTabs tab, NonNullList<ItemStack> items) {
         super.getSubItems(tab, items);
 
-        if (this.isInCreativeTab(tab)) {
+        if (this.isInCreativeTab(tab) && SWPConfig.addRecipes) {
             for (ItemStack stone : BlockPipe.stoneVariants) {
                 items.add(this.getWithBaseBlock(stone));
             }

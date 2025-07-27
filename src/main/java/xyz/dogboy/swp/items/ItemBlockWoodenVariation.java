@@ -10,6 +10,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.NonNullList;
 import net.minecraft.world.World;
 import xyz.dogboy.swp.Utils;
+import xyz.dogboy.swp.config.SWPConfig;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -22,7 +23,7 @@ public class ItemBlockWoodenVariation extends ItemBlock {
 
     @Override
     public void getSubItems(CreativeTabs tab, NonNullList<ItemStack> items) {
-        if (this.isInCreativeTab(tab)) {
+        if (this.isInCreativeTab(tab) && SWPConfig.addRecipes) {
             for (ItemStack plank : Utils.getAllPlanks()) {
                 items.add(this.getWithBaseBlock(plank));
             }
