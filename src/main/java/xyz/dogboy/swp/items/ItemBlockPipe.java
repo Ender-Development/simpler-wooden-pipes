@@ -1,6 +1,7 @@
 package xyz.dogboy.swp.items;
 
 import java.util.List;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.block.Block;
@@ -10,6 +11,7 @@ import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.NonNullList;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.World;
 
 import net.minecraftforge.fml.relauncher.Side;
@@ -38,16 +40,16 @@ public class ItemBlockPipe extends ItemBlockWoodenVariation {
 
     @Override
     @SideOnly(Side.CLIENT)
-    public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn) {
+    public void addInformation(@Nonnull ItemStack stack, @Nullable World worldIn, @Nonnull List<String> tooltip, @Nonnull ITooltipFlag flagIn) {
         super.addInformation(stack, worldIn, tooltip, flagIn);
         tooltip.add("");
 
         if (Utils.isBurnable(this.getBaseBlock(stack))) {
-            tooltip.add(I18n.format("simplewoodenpipes.tooltip.pipe.low_temp_only"));
+            tooltip.add(TextFormatting.RED + I18n.format("simplewoodenpipes.tooltip.pipe.low_temp_only") + TextFormatting.RESET);
         }
 
         ItemStack extractUpgrade = BlockPipe.getExtractionUpgrade();
-        tooltip.add(I18n.format("simplewoodenpipes.tooltip.pipe.add_upgrade", extractUpgrade.getDisplayName()));
+        tooltip.add(I18n.format("simplewoodenpipes.tooltip.pipe.add_upgrade", TextFormatting.GREEN + extractUpgrade.getDisplayName() + TextFormatting.GRAY));
     }
 
 }

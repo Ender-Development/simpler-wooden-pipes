@@ -48,20 +48,12 @@ public class CommonEventHandler {
                     Ingredient baseBlockIngredient = Ingredient.fromStacks(baseBlock);
                     Ingredient glassIngredient = new OreIngredient("blockGlass");
 
-                    ItemStack output = ((ItemBlockWoodenVariation) Registry.PIPE_ITEM).getWithBaseBlock(baseBlock);
-                    output.setCount(6);
+            ItemStack output = ((ItemBlockWoodenVariation) Registry.PIPE_ITEM).getWithBaseBlock(baseBlock);
+            output.setCount(6);
 
-                    return getRecipe(
-                            String.format("pipe_%s_%s_%d", baseBlock.getItem().getRegistryName().getNamespace(),
-                                    baseBlock.getItem().getRegistryName().getNamespace(), baseBlock.getMetadata()),
-                            output,
-
-                            baseBlockIngredient, glassIngredient, baseBlockIngredient,
-                            baseBlockIngredient, glassIngredient, baseBlockIngredient,
-                            baseBlockIngredient, glassIngredient, baseBlockIngredient
-                    );
-                })
-                .forEach(event.getRegistry()::register);
+            return getRecipe(String.format("pipe_%s_%s_%d", baseBlock.getItem().getRegistryName().getNamespace(), baseBlock.getItem().getRegistryName().getNamespace(), baseBlock.getMetadata()), output,
+                    baseBlockIngredient, glassIngredient, baseBlockIngredient, baseBlockIngredient, glassIngredient, baseBlockIngredient, baseBlockIngredient, glassIngredient, baseBlockIngredient);
+        }).forEach(event.getRegistry()::register);
     }
 
     private static IRecipe getRecipe(String id, ItemStack output, Ingredient... ingredients) {

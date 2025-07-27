@@ -3,6 +3,7 @@ package xyz.dogboy.swp.blocks;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Joiner;
@@ -45,6 +46,7 @@ import net.minecraftforge.fluids.capability.IFluidTankProperties;
 
 import xyz.dogboy.swp.Registry;
 import xyz.dogboy.swp.config.SWPConfig;
+import xyz.dogboy.swp.items.ItemBlockPipe;
 import xyz.dogboy.swp.tiles.TilePipe;
 
 public class BlockPipe extends BlockWoodenVariation {
@@ -107,7 +109,7 @@ public class BlockPipe extends BlockWoodenVariation {
     }
 
     @Override
-    public void addCollisionBoxToList(IBlockState state, World worldIn, BlockPos pos, AxisAlignedBB entityBox, List<AxisAlignedBB> collidingBoxes, @Nullable Entity entityIn, boolean isActualState) {
+    public void addCollisionBoxToList(@Nonnull IBlockState state, @Nonnull World worldIn, @Nonnull BlockPos pos, @Nonnull AxisAlignedBB entityBox, @Nonnull List<AxisAlignedBB> collidingBoxes, @Nullable Entity entityIn, boolean isActualState) {
         if (!isActualState) {
             state = state.getActualState(worldIn, pos);
         }
@@ -133,8 +135,9 @@ public class BlockPipe extends BlockWoodenVariation {
             Block.addCollisionBoxToList(pos, entityBox, collidingBoxes, DOWN_BB);
     }
 
+    @Nonnull
     @Override
-    public AxisAlignedBB getBoundingBox(IBlockState state, IBlockAccess source, BlockPos pos) {
+    public AxisAlignedBB getBoundingBox(@Nonnull IBlockState state, @Nonnull IBlockAccess source, @Nonnull BlockPos pos) {
         state = this.getActualState(state, source, pos);
 
         AxisAlignedBB boundingBox = MIDDLE_BB;
@@ -161,7 +164,7 @@ public class BlockPipe extends BlockWoodenVariation {
     }
 
     @Override
-    public boolean onBlockActivated(World worldIn, BlockPos pos, IBlockState state, EntityPlayer playerIn, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ) {
+    public boolean onBlockActivated(World worldIn, @Nonnull BlockPos pos, @Nonnull IBlockState state, @Nonnull EntityPlayer playerIn, @Nonnull EnumHand hand, @Nonnull EnumFacing facing, float hitX, float hitY, float hitZ) {
         TilePipe pipe = (TilePipe) worldIn.getTileEntity(pos);
         if (pipe == null) {
             return false;
@@ -179,6 +182,14 @@ public class BlockPipe extends BlockWoodenVariation {
         }
 
         return false;
+    }
+
+    @Nonnull
+    @Override
+    public SoundType getSoundType(@Nonnull IBlockState state, @Nonnull World world, @Nonnull BlockPos pos, @Nullable Entity entity) {
+        ItemBlockPipe itemBlockPipe = (ItemBlockPipe) this.getItem(world, pos, state).getItem();
+        Block baseBlock = Block.getBlockFromItem(itemBlockPipe.getBaseBlock(this.getItem(world, pos, state)).getItem());
+        return baseBlock.getSoundType(state, world, pos, entity);
     }
 
     private boolean handleFluidHandlerActivate(EntityPlayer playerIn, EnumHand hand, TilePipe pipe, IFluidHandlerItem fluidHandler) {
@@ -258,31 +269,32 @@ public class BlockPipe extends BlockWoodenVariation {
     }
 
     @Override
-    public boolean hasTileEntity(IBlockState state) {
+    public boolean hasTileEntity(@Nonnull IBlockState state) {
         return true;
     }
 
     @Nullable
     @Override
-    public TileEntity createTileEntity(World world, IBlockState state) {
+    public TileEntity createTileEntity(@Nonnull World world, @Nonnull IBlockState state) {
         return new TilePipe();
     }
 
     @Override
-    public boolean isOpaqueCube(IBlockState state) {
+    public boolean isOpaqueCube(@Nonnull IBlockState state) {
         return false;
     }
 
     @Override
-    public boolean isFullCube(IBlockState state) {
+    public boolean isFullCube(@Nonnull IBlockState state) {
         return false;
     }
 
     @Override
-    public boolean shouldSideBeRendered(IBlockState blockState, IBlockAccess blockAccess, BlockPos pos, EnumFacing side) {
+    public boolean shouldSideBeRendered(@Nonnull IBlockState blockState, @Nonnull IBlockAccess blockAccess, @Nonnull BlockPos pos, @Nonnull EnumFacing side) {
         return true;
     }
 
+    @Nonnull
     @Override
     protected BlockStateContainer createBlockState() {
         return new ExtendedBlockState(this,
@@ -303,8 +315,9 @@ public class BlockPipe extends BlockWoodenVariation {
         return 0;
     }
 
+    @Nonnull
     @Override
-    public IBlockState getActualState(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
+    public IBlockState getActualState(IBlockState state, @Nonnull IBlockAccess worldIn, @Nonnull BlockPos pos) {
         TileEntity tileentity = worldIn instanceof ChunkCache
                 ? ((ChunkCache)worldIn).getTileEntity(pos, Chunk.EnumCreateEntityType.CHECK)
                 : worldIn.getTileEntity(pos);
@@ -335,13 +348,14 @@ public class BlockPipe extends BlockWoodenVariation {
         return itemStack;
     }
 
+    @Nonnull
     @Override
-    public ItemStack getItem(World worldIn, BlockPos pos, IBlockState state) {
+    public ItemStack getItem(@Nonnull World worldIn, @Nonnull BlockPos pos, @Nonnull IBlockState state) {
         return this.getItem(worldIn, pos);
     }
 
     @Override
-    public boolean removedByPlayer(IBlockState state, World world, BlockPos pos, EntityPlayer player, boolean willHarvest) {
+    public boolean removedByPlayer(@Nonnull IBlockState state, @Nonnull World world, @Nonnull BlockPos pos, @Nonnull EntityPlayer player, boolean willHarvest) {
         if (willHarvest) {
             return true;
         }
@@ -349,13 +363,13 @@ public class BlockPipe extends BlockWoodenVariation {
     }
 
     @Override
-    public void harvestBlock(World world, EntityPlayer player, BlockPos pos, IBlockState state, @Nullable TileEntity te, ItemStack tool) {
+    public void harvestBlock(@Nonnull World world, @Nonnull EntityPlayer player, @Nonnull BlockPos pos, @Nonnull IBlockState state, @Nullable TileEntity te, @Nonnull ItemStack tool) {
         super.harvestBlock(world, player, pos, state, te, tool);
         world.setBlockToAir(pos);
     }
 
     @Override
-    public void getDrops(NonNullList<ItemStack> drops, IBlockAccess world, BlockPos pos, IBlockState state, int fortune) {
+    public void getDrops(NonNullList<ItemStack> drops, @Nonnull IBlockAccess world, @Nonnull BlockPos pos, @Nonnull IBlockState state, int fortune) {
         drops.add(this.getItem(world, pos));
 
         TileEntity tileEntity = world.getTileEntity(pos);
@@ -365,8 +379,9 @@ public class BlockPipe extends BlockWoodenVariation {
         }
     }
 
+    @Nonnull
     @Override
-    public BlockFaceShape getBlockFaceShape(IBlockAccess worldIn, IBlockState state, BlockPos pos, EnumFacing face) {
+    public BlockFaceShape getBlockFaceShape(@Nonnull IBlockAccess worldIn, @Nonnull IBlockState state, @Nonnull BlockPos pos, @Nonnull EnumFacing face) {
         return BlockFaceShape.CENTER;
     }
 

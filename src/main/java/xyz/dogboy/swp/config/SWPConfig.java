@@ -38,6 +38,9 @@ public class SWPConfig {
     @Config.Comment("Blacklist of block names that will not burn even if the block is normally flammable. Format: <mod>:<block>:<meta>")
     public static String[] nonBurnableBlocks = new String[]{};
 
+    @Config.Comment("Utilize advanced naming scheme. This allows renaming individual pipes. ONLY ENABLE IF YOU KNOW WHAT YOU ARE DOING!")
+    public static boolean advancedNamingScheme = false;
+
     @Mod.EventBusSubscriber(modid = Tags.MOD_ID)
     public static class ConfigEventHandler {
         @SubscribeEvent
