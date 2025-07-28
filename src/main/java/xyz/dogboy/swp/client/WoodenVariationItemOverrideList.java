@@ -11,7 +11,9 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import xyz.dogboy.swp.Utils;
+import xyz.dogboy.swp.proxy.CommonProxy;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @SideOnly(Side.CLIENT)
@@ -22,16 +24,20 @@ public class WoodenVariationItemOverrideList extends ItemOverrideList {
         super(ImmutableList.of());
     }
 
+    @Nonnull
     @Override
-    public IBakedModel handleItemState(IBakedModel originalModel, ItemStack stack, @Nullable World world, @Nullable EntityLivingBase entity) {
+    public IBakedModel handleItemState(@Nonnull IBakedModel originalModel, ItemStack stack, @Nullable World world, @Nullable EntityLivingBase entity) {
+        ItemStack baseBlock;
         if (stack.hasTagCompound()) {
-            ItemStack baseBlock = new ItemStack(stack.getTagCompound().getCompoundTag("BaseBlock"));
-            if (!baseBlock.isEmpty()) {
-                Block block = Block.getBlockFromItem(baseBlock.getItem());
-                if (block != Blocks.AIR) {
-                    String texture = Utils.getTextureFromBlock(block, baseBlock.getItemDamage());
-                    return ((BakedWoodenVariationModel) originalModel).getActualModel(texture);
-                }
+            baseBlock = new ItemStack(stack.getTagCompound().getCompoundTag("BaseBlock"));
+        } else {
+            baseBlock = CommonProxy.DEFAULT_MATERIAL.toItemStack();
+        }
+        if (!baseBlock.isEmpty()) {
+            Block block = Block.getBlockFromItem(baseBlock.getItem());
+            if (block != Blocks.AIR) {
+                String texture = Utils.getTextureFromBlock(block, baseBlock.getItemDamage());
+                return ((BakedWoodenVariationModel) originalModel).getActualModel(texture);
             }
         }
         return originalModel;

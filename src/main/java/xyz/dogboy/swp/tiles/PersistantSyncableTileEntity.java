@@ -1,5 +1,6 @@
 package xyz.dogboy.swp.tiles;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.block.state.IBlockState;
@@ -13,31 +14,33 @@ public abstract class PersistantSyncableTileEntity extends TileEntity {
     protected abstract void writeData(NBTTagCompound tagCompound);
     protected abstract void readData(NBTTagCompound tagCompound);
 
+    @Nonnull
     @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound compound) {
+    public NBTTagCompound writeToNBT(@Nonnull NBTTagCompound compound) {
         super.writeToNBT(compound);
         this.writeData(compound);
         return compound;
     }
 
     @Override
-    public void readFromNBT(NBTTagCompound compound) {
+    public void readFromNBT(@Nonnull NBTTagCompound compound) {
         super.readFromNBT(compound);
         this.readData(compound);
     }
 
+    @Nonnull
     @Override
     public NBTTagCompound getUpdateTag() {
         return this.writeToNBT(new NBTTagCompound());
     }
 
     @Override
-    public void handleUpdateTag(NBTTagCompound tag) {
+    public void handleUpdateTag(@Nonnull NBTTagCompound tag) {
         this.readFromNBT(tag);
     }
 
     @Override
-    public void onDataPacket(NetworkManager net, SPacketUpdateTileEntity pkt) {
+    public void onDataPacket(@Nonnull NetworkManager net, SPacketUpdateTileEntity pkt) {
         this.handleUpdateTag(pkt.getNbtCompound());
     }
 

@@ -24,7 +24,7 @@ public class SWPConfig {
     @Config.Comment("Should recipes be added by default?")
     public static boolean addRecipes = true;
 
-    @Config.Comment("Item used to upgrade a pipe to extract mode. Format: <Item Name> [<Metadata> [NBT Data]]")
+    @Config.Comment("Item used to upgrade a pipe to extract mode. Format: <mod>:<block>:<meta>")
     public static String pipeExtractionItem = "minecraft:piston";
 
     @Config.Comment("Should Pipes connect to variations of the same block variant (allow all wood variants to connect to each other for example)")
@@ -40,6 +40,10 @@ public class SWPConfig {
 
     @Config.Comment("Utilize advanced naming scheme. This allows renaming individual pipes. ONLY ENABLE IF YOU KNOW WHAT YOU ARE DOING!")
     public static boolean advancedNamingScheme = false;
+
+    @Config.RequiresMcRestart
+    @Config.Comment("Default base block for pipes. Format: <mod>:<block>:<meta>")
+    public static String defaultBaseBlock = "minecraft:planks";
 
     @Mod.EventBusSubscriber(modid = Tags.MOD_ID)
     public static class ConfigEventHandler {

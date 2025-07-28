@@ -6,7 +6,6 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.google.common.base.Joiner;
 import net.minecraft.block.Block;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.material.MapColor;
@@ -16,26 +15,23 @@ import net.minecraft.block.properties.PropertyBool;
 import net.minecraft.block.state.BlockFaceShape;
 import net.minecraft.block.state.BlockStateContainer;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.client.particle.ParticleManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.SoundEvents;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.JsonToNBT;
-import net.minecraft.nbt.NBTException;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.EnumHand;
-import net.minecraft.util.NonNullList;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.*;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.world.ChunkCache;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.property.ExtendedBlockState;
 import net.minecraftforge.common.property.IUnlistedProperty;
@@ -44,9 +40,14 @@ import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandlerItem;
 import net.minecraftforge.fluids.capability.IFluidTankProperties;
 
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import xyz.dogboy.swp.Registry;
+import xyz.dogboy.swp.client.DiggingParticle;
+import xyz.dogboy.swp.config.CfgParser;
 import xyz.dogboy.swp.config.SWPConfig;
 import xyz.dogboy.swp.items.ItemBlockPipe;
+import xyz.dogboy.swp.proxy.CommonProxy;
 import xyz.dogboy.swp.tiles.TilePipe;
 
 public class BlockPipe extends BlockWoodenVariation {
@@ -77,7 +78,7 @@ public class BlockPipe extends BlockWoodenVariation {
     public static final AxisAlignedBB DOWN_BB = new AxisAlignedBB(0.3125, 0, 0.3125, 0.6875, 0.25, 0.6875);
 
     public static final List<ItemStack> stoneVariants = Collections.unmodifiableList(Arrays.asList(
-            new ItemStack(Blocks.STONE),
+            new ItemStack(Blocks.STONE, 1, 0),
             new ItemStack(Blocks.STONE, 1, 1),
             new ItemStack(Blocks.STONE, 1, 2),
             new ItemStack(Blocks.STONE, 1, 3),
@@ -88,11 +89,9 @@ public class BlockPipe extends BlockWoodenVariation {
 
     public BlockPipe() {
         super("pipe", Material.WOOD, MapColor.WOOD);
-        this.setHardness(1.0F);
-        this.setResistance(2.0F);
-        this.setSoundType(SoundType.GLASS);
-
-        this.setDefaultState(this.getBlockState().getBaseState()
+        setHardness(1.0F);
+        setResistance(2.0F);
+        setDefaultState(getBlockState().getBaseState()
                 .withProperty(NORTH, false)
                 .withProperty(EAST, false)
                 .withProperty(SOUTH, false)
@@ -187,9 +186,83 @@ public class BlockPipe extends BlockWoodenVariation {
     @Nonnull
     @Override
     public SoundType getSoundType(@Nonnull IBlockState state, @Nonnull World world, @Nonnull BlockPos pos, @Nullable Entity entity) {
-        ItemBlockPipe itemBlockPipe = (ItemBlockPipe) this.getItem(world, pos, state).getItem();
-        Block baseBlock = Block.getBlockFromItem(itemBlockPipe.getBaseBlock(this.getItem(world, pos, state)).getItem());
-        return baseBlock.getSoundType(state, world, pos, entity);
+        return getBaseBlockState(world, pos).getBlock().getSoundType(state, world, pos, entity);
+    }
+
+    @Override
+    public boolean addLandingEffects(@Nonnull IBlockState state, @Nonnull WorldServer worldObj, @Nonnull BlockPos blockPosition, @Nonnull IBlockState iblockstate, @Nonnull EntityLivingBase entity, int numberOfParticles) {
+        if (worldObj.getBlockState(blockPosition).getBlock() instanceof BlockPipe) {
+            worldObj.spawnParticle(EnumParticleTypes.BLOCK_CRACK, blockPosition.getX(), blockPosition.getY(), blockPosition.getZ(), numberOfParticles, -0.5D, 0.1D, -0.5D, 0.15D, Block.getStateId(getBaseBlockState(worldObj, blockPosition)));
+        }
+        return true;
+    }
+
+    @Override
+    public boolean addRunningEffects(@Nonnull IBlockState state, @Nonnull World world, @Nonnull BlockPos pos, @Nonnull Entity entity) {
+        if (world.getBlockState(pos).getBlock() instanceof BlockPipe) {
+            int i = pos.getX();
+            int k = pos.getZ();
+            float f = 0.1F;
+            AxisAlignedBB axisalignedbb = state.getBoundingBox(world, pos);
+            double x = (double) i + world.rand.nextDouble() * (axisalignedbb.maxX - axisalignedbb.minX - 2 * f) + f + axisalignedbb.minX;
+            double z = (double) k + world.rand.nextDouble() * (axisalignedbb.maxZ - axisalignedbb.minZ - 2 * f) + f + axisalignedbb.minZ;
+
+            world.spawnParticle(EnumParticleTypes.BLOCK_CRACK, x, entity.getEntityBoundingBox().minY + 0.1D, z, -entity.motionX * 4.0D, 1.5D, -entity.motionZ * 4.0D, Block.getStateId(getBaseBlockState(world, pos)));
+        }
+        return true;
+    }
+
+    @SideOnly(Side.CLIENT)
+    @Override
+    public boolean addHitEffects(@Nonnull IBlockState state, @Nonnull World worldObj, @Nonnull RayTraceResult target, @Nonnull ParticleManager manager) {
+        if (worldObj.getBlockState(target.getBlockPos()).getBlock() instanceof BlockPipe) {
+            int i = target.getBlockPos().getX();
+            int j = target.getBlockPos().getY();
+            int k = target.getBlockPos().getZ();
+            float f = 0.1F;
+            AxisAlignedBB axisalignedbb = state.getBoundingBox(worldObj, target.getBlockPos());
+            double d0 = (double) i + worldObj.rand.nextDouble() * (axisalignedbb.maxX - axisalignedbb.minX - 2 * f) + f + axisalignedbb.minX;
+            double d1 = (double) j + worldObj.rand.nextDouble() * (axisalignedbb.maxY - axisalignedbb.minY - 2 * f) + f + axisalignedbb.minY;
+            double d2 = (double) k + worldObj.rand.nextDouble() * (axisalignedbb.maxZ - axisalignedbb.minZ - 2 * f) + f + axisalignedbb.minZ;
+
+            switch (target.sideHit) {
+                case DOWN:
+                    d1 = (double) j + axisalignedbb.minY - f;
+                    break;
+                case UP:
+                    d1 = (double) j + axisalignedbb.maxY + f;
+                    break;
+                case NORTH:
+                    d2 = (double) k + axisalignedbb.minZ - f;
+                    break;
+                case SOUTH:
+                    d2 = (double) k + axisalignedbb.maxZ + f;
+                    break;
+                case WEST:
+                    d0 = (double) i + axisalignedbb.minX - f;
+                    break;
+                case EAST:
+                    d0 = (double) i + axisalignedbb.maxX + f;
+                    break;
+            }
+            manager.addEffect((new DiggingParticle(worldObj, d0, d1, d2, 0.0D, 0.0D, 0.0D, getBaseBlockState(worldObj, target.getBlockPos()))).setBlockPos(target.getBlockPos()).multiplyVelocity(0.2F).multipleParticleScaleBy(0.6F));
+        }
+        return true;
+    }
+
+    @SideOnly(Side.CLIENT)
+    @Override
+    public boolean addDestroyEffects(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull ParticleManager manager) {
+        if (world.getBlockState(pos).getBlock() instanceof BlockPipe) {
+            manager.addBlockDestroyEffects(pos, getBaseBlockState(world, pos));
+        }
+        return true;
+    }
+
+    private IBlockState getBaseBlockState(World world, BlockPos pos) {
+        ItemBlockPipe itemBlockPipe = (ItemBlockPipe) this.getItem(world, pos, world.getBlockState(pos)).getItem();
+        ItemStack baseBlockItem = itemBlockPipe.getBaseBlock(this.getItem(world, pos, world.getBlockState(pos)));
+        return Block.getBlockFromItem(baseBlockItem.getItem()).getStateFromMeta(baseBlockItem.getMetadata());
     }
 
     private boolean handleFluidHandlerActivate(EntityPlayer playerIn, EnumHand hand, TilePipe pipe, IFluidHandlerItem fluidHandler) {
@@ -258,7 +331,10 @@ public class BlockPipe extends BlockWoodenVariation {
         super.onBlockPlacedBy(worldIn, pos, state, placer, stack);
 
         if (!stack.hasTagCompound()) {
-            return;
+            stack.setTagCompound(new NBTTagCompound());
+            NBTTagCompound baseBlockNbt = new NBTTagCompound();
+            CommonProxy.DEFAULT_MATERIAL.toItemStack().writeToNBT(baseBlockNbt);
+            stack.getTagCompound().setTag("BaseBlock", baseBlockNbt);
         }
 
         NBTTagCompound baseBlock = stack.getTagCompound().getCompoundTag("BaseBlock");
@@ -298,8 +374,8 @@ public class BlockPipe extends BlockWoodenVariation {
     @Override
     protected BlockStateContainer createBlockState() {
         return new ExtendedBlockState(this,
-                new IProperty[]{ NORTH, EAST, SOUTH, WEST, UP, DOWN, EXTRACTION, EXTRACT_NORTH, EXTRACT_EAST, EXTRACT_SOUTH, EXTRACT_WEST, EXTRACT_UP, EXTRACT_DOWN },
-                new IUnlistedProperty[]{ BlockWoodenVariation.TEXTURE });
+                new IProperty[]{NORTH, EAST, SOUTH, WEST, UP, DOWN, EXTRACTION, EXTRACT_NORTH, EXTRACT_EAST, EXTRACT_SOUTH, EXTRACT_WEST, EXTRACT_UP, EXTRACT_DOWN},
+                new IUnlistedProperty[]{BlockWoodenVariation.TEXTURE});
     }
 
     public boolean canConnectTo(IBlockAccess world, BlockPos pipePos, EnumFacing direction, boolean excludePipe) {
@@ -319,7 +395,7 @@ public class BlockPipe extends BlockWoodenVariation {
     @Override
     public IBlockState getActualState(IBlockState state, @Nonnull IBlockAccess worldIn, @Nonnull BlockPos pos) {
         TileEntity tileentity = worldIn instanceof ChunkCache
-                ? ((ChunkCache)worldIn).getTileEntity(pos, Chunk.EnumCreateEntityType.CHECK)
+                ? ((ChunkCache) worldIn).getTileEntity(pos, Chunk.EnumCreateEntityType.CHECK)
                 : worldIn.getTileEntity(pos);
         boolean extraction = tileentity instanceof TilePipe && ((TilePipe) tileentity).isExtractionEnabled();
 
@@ -388,44 +464,12 @@ public class BlockPipe extends BlockWoodenVariation {
     public static ItemStack getExtractionUpgrade() {
         if (BlockPipe.extractionUpgrade == null) {
             try {
-                String upgrade = SWPConfig.pipeExtractionItem;
-                String[] data = upgrade.split(" ");
-
-                Item item;
-                int meta = 0;
-
-                ResourceLocation resourcelocation = new ResourceLocation(data[0]);
-                item = Item.REGISTRY.getObject(resourcelocation);
-                if (item == null) {
-                    throw new IllegalArgumentException("Invalid item name");
-                }
-
-                if (data.length > 1) {
-                    try {
-                        meta = Integer.parseInt(data[1]);
-                    } catch (NumberFormatException e) {
-                        throw new IllegalArgumentException("Invalid item metadata: " + data[1]);
-                    }
-                }
-
-                BlockPipe.extractionUpgrade = new ItemStack(item, 1, meta);
-
-                if (data.length > 2) {
-                    String[] nbtTagStringArray = new String[data.length - 2];
-                    System.arraycopy(data, 2, nbtTagStringArray, 0, nbtTagStringArray.length);
-                    String nbtTagString = Joiner.on(' ').join(nbtTagStringArray);
-                    try {
-                        NBTTagCompound nbtTagCompound = JsonToNBT.getTagFromJson(nbtTagString);
-                        BlockPipe.extractionUpgrade.setTagCompound(nbtTagCompound);
-                    } catch (NBTException e) {
-                        throw new IllegalArgumentException("Invalid item nbt tag: " + nbtTagString);
-                    }
-                }
+                CfgParser.ConfigItem configItem = new CfgParser.ConfigItem(SWPConfig.pipeExtractionItem);
+                BlockPipe.extractionUpgrade = configItem.toItemStack();
             } catch (Exception e) {
                 throw new RuntimeException("Failed to parse SWP pipe extraction upgrade item", e);
             }
         }
-
         return BlockPipe.extractionUpgrade.copy();
     }
 

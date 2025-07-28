@@ -1,15 +1,14 @@
 package xyz.dogboy.swp.client;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.model.BakedQuad;
@@ -17,12 +16,8 @@ import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.block.model.ItemOverrideList;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.init.Blocks;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.World;
 import net.minecraftforge.client.model.BakedModelWrapper;
 import net.minecraftforge.client.model.IModel;
 import net.minecraftforge.common.model.IModelState;
@@ -30,7 +25,6 @@ import net.minecraftforge.common.property.IExtendedBlockState;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import xyz.dogboy.swp.Utils;
 import xyz.dogboy.swp.blocks.BlockPipe;
 
 @SideOnly(Side.CLIENT)
@@ -70,6 +64,7 @@ public class BakedWoodenVariationModel extends BakedModelWrapper<IBakedModel> {
         return bakedModel;
     }
 
+    @Nonnull
     @Override
     public List<BakedQuad> getQuads(@Nullable IBlockState state, @Nullable EnumFacing side, long rand) {
         if (state instanceof IExtendedBlockState) {
@@ -80,6 +75,7 @@ public class BakedWoodenVariationModel extends BakedModelWrapper<IBakedModel> {
         return this.originalModel.getQuads(state, side, rand);
     }
 
+    @Nonnull
     @Override
     public ItemOverrideList getOverrides() {
         return WoodenVariationItemOverrideList.instance;

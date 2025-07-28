@@ -5,9 +5,12 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import xyz.dogboy.swp.Utils;
+import xyz.dogboy.swp.config.CfgParser;
+import xyz.dogboy.swp.config.SWPConfig;
 import xyz.dogboy.swp.event.CommonEventHandler;
 
 public class CommonProxy implements IProxy {
+    public static CfgParser.ConfigItem DEFAULT_MATERIAL;
 
     @Override
     public void preInit(FMLPreInitializationEvent event) {
@@ -25,5 +28,7 @@ public class CommonProxy implements IProxy {
         // Common post-initialization logic
         Utils.whitelist.init();
         Utils.blacklist.init();
+
+        DEFAULT_MATERIAL = new CfgParser.ConfigItem(SWPConfig.defaultBaseBlock);
     }
 }

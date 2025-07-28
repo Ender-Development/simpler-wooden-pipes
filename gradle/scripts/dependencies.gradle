@@ -73,15 +73,18 @@ dependencies {
 	implementation "mezz:jei:4.27.3"
 
     // The One Probe
-	implementation rfg.deobf("curse.maven:the-one-probe-community-edition-885670:6280353")
-	implementation rfg.deobf("curse.maven:topalldependents-1120632:6310644")
+	runtimeOnly "curse.maven:the-one-probe-community-edition-885670:6280353"
+	runtimeOnly "curse.maven:topalldependents-1120632:6310644"
 
-	runtimeOnly "curse.maven:fantastic-lib-315773:6807019"
-	runtimeOnly "curse.maven:controlled-burn-306335:6599931"
+	runtimeOnly("com.cleanroommc:groovyscript:1.2.4") { transitive = false } // so it doesn't installs JEI
 
-	compileOnly rfg.deobf("curse.maven:athenaeum-284350:4633750")
-    compileOnly rfg.deobf("curse.maven:dropt-284973:5405050")
-    compileOnly rfg.deobf("curse.maven:pyrotech-306676:6253355")
+	runtimeOnly "curse.maven:patchouli-rofl-edition-905159:6178311"
+
+    // Cursed CraftTweaker
+    runtimeOnly "CraftTweaker2:CraftTweaker2-API:4.1.20.698"
+    runtimeOnly "CraftTweaker2:ZenScript:4.1.20.698"
+    runtimeOnly "CraftTweaker2:CraftTweaker2-MC1120-Main:1.12-4.1.20.698"
+
     if (project.debug_pyrotech.toBoolean()) {
         runtimeOnly "curse.maven:athenaeum-284350:4633750"
         runtimeOnly "curse.maven:dropt-284973:5405050"

@@ -12,6 +12,7 @@ import net.minecraft.world.World;
 import xyz.dogboy.simplewoodenpipes.Tags;
 import xyz.dogboy.swp.Utils;
 import xyz.dogboy.swp.config.SWPConfig;
+import xyz.dogboy.swp.proxy.CommonProxy;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -26,6 +27,10 @@ public class ItemBlockWoodenVariation extends ItemBlock {
 
     @Override
     public void getSubItems(CreativeTabs tab, NonNullList<ItemStack> items) {
+        if (!SWPConfig.addRecipes) {
+            items.clear();
+        }
+
         if (this.isInCreativeTab(tab) && SWPConfig.addRecipes) {
             for (ItemStack plank : Utils.getAllPlanks()) {
                 items.add(this.getWithBaseBlock(plank));
@@ -69,7 +74,7 @@ public class ItemBlockWoodenVariation extends ItemBlock {
             }
         }
 
-        return new ItemStack(Blocks.PLANKS);
+        return CommonProxy.DEFAULT_MATERIAL.toItemStack();
     }
 
     @Override
