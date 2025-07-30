@@ -2,6 +2,7 @@
 
 ## [1.6]
 - fix crash with `toolprogression` mod
+- fix weird creative inventory behavior
 
 ## [1.5]
 - allow changing the default pipe material
