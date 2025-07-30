@@ -90,4 +90,8 @@ dependencies {
         runtimeOnly "curse.maven:dropt-284973:5405050"
         runtimeOnly "curse.maven:pyrotech-306676:6253355"
     }
+
+    if (project.debug_toolprogression.toBoolean()) {
+        runtimeOnly "curse.maven:tool-progression-266550:3270468"
+    }
 }

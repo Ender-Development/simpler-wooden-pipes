@@ -1,5 +1,8 @@
 # Simpler Wooden Pipes
 
+## [1.6]
+- fix crash with `toolprogression` mod
+
 ## [1.5]
 - allow changing the default pipe material
 - fixed a edge case where the default pipe wouldn't have any nbt data and would connect to all other pipes

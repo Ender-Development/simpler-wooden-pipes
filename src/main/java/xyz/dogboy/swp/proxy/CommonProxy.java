@@ -21,6 +21,7 @@ public class CommonProxy implements IProxy {
     @Override
     public void init(FMLInitializationEvent event) {
         // Common initialization logic
+        DEFAULT_MATERIAL = new CfgParser.ConfigItem(SWPConfig.defaultBaseBlock);
     }
 
     @Override
@@ -28,7 +29,5 @@ public class CommonProxy implements IProxy {
         // Common post-initialization logic
         Utils.whitelist.init();
         Utils.blacklist.init();
-
-        DEFAULT_MATERIAL = new CfgParser.ConfigItem(SWPConfig.defaultBaseBlock);
     }
 }
