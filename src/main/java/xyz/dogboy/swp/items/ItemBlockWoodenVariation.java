@@ -27,10 +27,6 @@ public class ItemBlockWoodenVariation extends ItemBlock {
 
     @Override
     public void getSubItems(CreativeTabs tab, NonNullList<ItemStack> items) {
-        if (!SWPConfig.addRecipes) {
-            items.clear();
-        }
-
         if (this.isInCreativeTab(tab) && SWPConfig.addRecipes) {
             for (ItemStack plank : Utils.getAllPlanks()) {
                 items.add(this.getWithBaseBlock(plank));
