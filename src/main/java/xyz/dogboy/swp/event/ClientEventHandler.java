@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Collections;
 
 @SideOnly(Side.CLIENT)
-@Mod.EventBusSubscriber(modid = Tags.MOD_ID)
 public class ClientEventHandler {
     @SubscribeEvent
     public void registerModels(ModelRegistryEvent event) {
