@@ -1,5 +1,9 @@
 # Simpler Wooden Pipes
 
+## [1.7]
+- fix server crash
+- improved pipe model renderer
+
 ## [1.6]
 - fix crash with `toolprogression` mod
 - fix weird creative inventory behavior
