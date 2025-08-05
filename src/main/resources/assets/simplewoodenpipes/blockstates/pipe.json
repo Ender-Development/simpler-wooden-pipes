@@ -2,7 +2,25 @@
   "multipart": [
     {
       "apply": {
-        "model": "simplewoodenpipes:pipe_middle"
+        "model": "simplewoodenpipes:pipe_core"
+      }
+    },
+    {
+      "when": {
+        "straight": "false"
+      },
+      "apply": {
+        "model": "simplewoodenpipes:pipe_middle",
+        "uvlock": false
+      }
+    },
+    {
+      "when": {
+        "straight": "true"
+      },
+      "apply": {
+        "model": "simplewoodenpipes:pipe_straight",
+        "uvlock": false
       }
     },
     {

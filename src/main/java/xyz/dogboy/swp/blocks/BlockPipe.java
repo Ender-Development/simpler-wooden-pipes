@@ -69,6 +69,8 @@ public class BlockPipe extends BlockWoodenVariation {
     public static final PropertyBool EXTRACT_UP = PropertyBool.create("extract_up");
     public static final PropertyBool EXTRACT_DOWN = PropertyBool.create("extract_down");
 
+    public static final PropertyBool STRAIGHT = PropertyBool.create("straight");
+
     public static final AxisAlignedBB MIDDLE_BB = new AxisAlignedBB(0.25, 0.25, 0.25, 0.75, 0.75, 0.75);
     public static final AxisAlignedBB NORTH_BB = new AxisAlignedBB(0.3125, 0.3125, 0, 0.6875, 0.6875, 0.25);
     public static final AxisAlignedBB EAST_BB = new AxisAlignedBB(1, 0.3125, 0.3125, 0.75, 0.6875, 0.6875);
@@ -104,7 +106,8 @@ public class BlockPipe extends BlockWoodenVariation {
                 .withProperty(EXTRACT_SOUTH, false)
                 .withProperty(EXTRACT_WEST, false)
                 .withProperty(EXTRACT_UP, false)
-                .withProperty(EXTRACT_DOWN, false));
+                .withProperty(EXTRACT_DOWN, false)
+                .withProperty(STRAIGHT, false));
     }
 
     @Override
@@ -374,7 +377,7 @@ public class BlockPipe extends BlockWoodenVariation {
     @Override
     protected BlockStateContainer createBlockState() {
         return new ExtendedBlockState(this,
-                new IProperty[]{NORTH, EAST, SOUTH, WEST, UP, DOWN, EXTRACTION, EXTRACT_NORTH, EXTRACT_EAST, EXTRACT_SOUTH, EXTRACT_WEST, EXTRACT_UP, EXTRACT_DOWN},
+                new IProperty[]{NORTH, EAST, SOUTH, WEST, UP, DOWN, EXTRACTION, EXTRACT_NORTH, EXTRACT_EAST, EXTRACT_SOUTH, EXTRACT_WEST, EXTRACT_UP, EXTRACT_DOWN, STRAIGHT},
                 new IUnlistedProperty[]{BlockWoodenVariation.TEXTURE});
     }
 
@@ -387,7 +390,7 @@ public class BlockPipe extends BlockWoodenVariation {
         return false;
     }
 
-    public int getMetaFromState(IBlockState state) {
+    public int getMetaFromState(@Nonnull IBlockState state) {
         return 0;
     }
 
@@ -398,6 +401,15 @@ public class BlockPipe extends BlockWoodenVariation {
                 ? ((ChunkCache) worldIn).getTileEntity(pos, Chunk.EnumCreateEntityType.CHECK)
                 : worldIn.getTileEntity(pos);
         boolean extraction = tileentity instanceof TilePipe && ((TilePipe) tileentity).isExtractionEnabled();
+
+        boolean north = this.canConnectTo(worldIn, pos, EnumFacing.NORTH, false);
+        boolean east = this.canConnectTo(worldIn, pos, EnumFacing.EAST, false);
+        boolean south = this.canConnectTo(worldIn, pos, EnumFacing.SOUTH, false);
+        boolean west = this.canConnectTo(worldIn, pos, EnumFacing.WEST, false);
+        boolean up = this.canConnectTo(worldIn, pos, EnumFacing.UP, false);
+        boolean down = this.canConnectTo(worldIn, pos, EnumFacing.DOWN, false);
+
+        boolean straight = (north && south && !east && !west && !up && !down) || (east && west && !north && !south && !up && !down) || (up && down && !north && !south && !east && !west);
 
         return state.withProperty(NORTH, this.canConnectTo(worldIn, pos, EnumFacing.NORTH, false))
                 .withProperty(EAST, this.canConnectTo(worldIn, pos, EnumFacing.EAST, false))
@@ -411,7 +423,8 @@ public class BlockPipe extends BlockWoodenVariation {
                 .withProperty(EXTRACT_SOUTH, extraction && this.canConnectTo(worldIn, pos, EnumFacing.SOUTH, true))
                 .withProperty(EXTRACT_WEST, extraction && this.canConnectTo(worldIn, pos, EnumFacing.WEST, true))
                 .withProperty(EXTRACT_UP, extraction && this.canConnectTo(worldIn, pos, EnumFacing.UP, true))
-                .withProperty(EXTRACT_DOWN, extraction && this.canConnectTo(worldIn, pos, EnumFacing.DOWN, true));
+                .withProperty(EXTRACT_DOWN, extraction && this.canConnectTo(worldIn, pos, EnumFacing.DOWN, true))
+                .withProperty(STRAIGHT, straight);
     }
 
     public ItemStack getItem(IBlockAccess world, BlockPos pos) {

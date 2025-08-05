@@ -1,0 +1,22 @@
+{
+	"credit": "Made with Blockbench",
+	"textures": {
+		"main": "minecraft:blocks/planks_oak",
+		"particle": "minecraft:blocks/planks_oak"
+	},
+	"elements": [
+		{
+			"name": "mid_cube",
+			"from": [5, 5, 5],
+			"to": [11, 11, 11],
+			"faces": {
+				"north": {"uv": [5, 5, 11, 11], "texture": "#main"},
+				"east": {"uv": [5, 5, 11, 11], "texture": "#main"},
+				"south": {"uv": [5, 5, 11, 11], "texture": "#main"},
+				"west": {"uv": [5, 5, 11, 11], "texture": "#main"},
+				"up": {"uv": [5, 5, 11, 11], "texture": "#main"},
+				"down": {"uv": [5, 5, 11, 11], "texture": "#main"}
+			}
+		}
+	]
+}

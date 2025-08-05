@@ -59,9 +59,7 @@ public class TilePipe extends PersistantSyncableTileEntity implements ITickable,
                 if (freeSpace <= 0) {
                     continue;
                 }
-                FluidStack drainableFluid = this.fluid == null
-                        ? fluidHandler.drain(Math.min(SWPConfig.transferRate, freeSpace), true)
-                        : fluidHandler.drain(new FluidStack(this.fluid, Math.min(SWPConfig.transferRate, freeSpace)), true);
+                FluidStack drainableFluid = this.fluid == null ? fluidHandler.drain(Math.min(SWPConfig.transferRate, freeSpace), true) : fluidHandler.drain(new FluidStack(this.fluid, Math.min(SWPConfig.transferRate, freeSpace)), true);
                 if (drainableFluid == null || drainableFluid.amount <= 0) {
                     continue;
                 }
@@ -109,13 +107,12 @@ public class TilePipe extends PersistantSyncableTileEntity implements ITickable,
         if (capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY) {
             return (T) this;
         }
-
         return null;
     }
 
     @Override
     public IFluidTankProperties[] getTankProperties() {
-        return new IFluidTankProperties[] { new FluidTankProperties(this.getFluidStack(), SWPConfig.internalVolume) };
+        return new IFluidTankProperties[]{new FluidTankProperties(this.getFluidStack(), SWPConfig.internalVolume)};
     }
 
     @Override
@@ -125,28 +122,22 @@ public class TilePipe extends PersistantSyncableTileEntity implements ITickable,
         }
 
         FluidStack current = this.getFluidStack();
-
-        int maxFill = current == null
-                ? Math.min(SWPConfig.internalVolume, resource.amount)
-                : current.isFluidEqual(resource) ? Math.min(SWPConfig.internalVolume - current.amount, resource.amount) : 0;
+        int maxFill = current == null ? Math.min(SWPConfig.internalVolume, resource.amount) : current.isFluidEqual(resource) ? Math.min(SWPConfig.internalVolume - current.amount, resource.amount) : 0;
 
         if (!doFill) {
             return maxFill;
         }
-
         if (current == null) {
             this.fluid = resource.getFluid();
             this.amount = resource.amount;
             this.triggerUpdate();
             return resource.amount;
         }
-
         if (current.isFluidEqual(resource)) {
             this.amount += maxFill;
             this.triggerUpdate();
             return maxFill;
         }
-
         return 0;
     }
 
@@ -156,12 +147,10 @@ public class TilePipe extends PersistantSyncableTileEntity implements ITickable,
         if (maxDrain <= 0) {
             return null;
         }
-
         FluidStack current = this.getFluidStack();
         if (current == null) {
             return null;
         }
-
         return this.drain(new FluidStack(current.getFluid(), maxDrain), doDrain);
     }
 
@@ -171,18 +160,14 @@ public class TilePipe extends PersistantSyncableTileEntity implements ITickable,
         if (resource == null || resource.amount <= 0) {
             return null;
         }
-
         FluidStack current = this.getFluidStack();
         if (current == null) {
             return null;
         }
-
         int maxDrain = Math.min(SWPConfig.transferRate, Math.min(current.amount, resource.amount));
-
         if (!doDrain) {
             return new FluidStack(current.getFluid(), maxDrain);
         }
-
         this.amount -= maxDrain;
         this.triggerUpdate();
         return new FluidStack(current.getFluid(), maxDrain);
@@ -195,7 +180,6 @@ public class TilePipe extends PersistantSyncableTileEntity implements ITickable,
             tagCompound.setString("FluidName", FluidRegistry.getFluidName(current.getFluid()));
             tagCompound.setInteger("FluidAmount", current.amount);
         }
-
         tagCompound.setBoolean("CanExtract", this.extraction);
     }
 
@@ -209,11 +193,9 @@ public class TilePipe extends PersistantSyncableTileEntity implements ITickable,
             if (fluid == null) {
                 return;
             }
-
             this.fluid = fluid;
             this.amount = fluidAmount;
         }
-
         this.extraction = tagCompound.getBoolean("CanExtract");
     }
 
@@ -222,11 +204,9 @@ public class TilePipe extends PersistantSyncableTileEntity implements ITickable,
             if (!this.getTileData().hasKey("BaseBlock")) {
                 return new ItemStack(Blocks.AIR);
             }
-
             NBTTagCompound baseBlock = this.getTileData().getCompoundTag("BaseBlock");
             this.cachedBaseBlock = new ItemStack(baseBlock);
         }
-
         return this.cachedBaseBlock;
     }
 
@@ -243,7 +223,6 @@ public class TilePipe extends PersistantSyncableTileEntity implements ITickable,
                 }
             }
         }
-
         return state.withProperty(BlockWoodenVariation.TEXTURE, texture.isEmpty() ? "minecraft:blocks/planks_oak" : texture);
     }
 
@@ -270,5 +249,4 @@ public class TilePipe extends PersistantSyncableTileEntity implements ITickable,
         }
         return tileEntity.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, direction.getOpposite());
     }
-
 }
