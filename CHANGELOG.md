@@ -1,5 +1,9 @@
 # Simpler Wooden Pipes
 
+## [1.8]
+- rewrote the pipe logic, no more random fluid transfer
+- improved pump logic
+
 ## [1.7]
 - fix server crash
 - improved pipe model renderer
