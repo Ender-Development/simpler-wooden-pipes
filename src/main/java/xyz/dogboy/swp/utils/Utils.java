@@ -1,4 +1,4 @@
-package xyz.dogboy.swp;
+package xyz.dogboy.swp.utils;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -53,6 +54,14 @@ public class Utils {
         }
         IBlockState state = block.getDefaultState();
         return state.getMaterial().getCanBurn();
+    }
+
+    public static EnumFacing readNullableFacing(int index) {
+        return index > 0 ? EnumFacing.byIndex(index) : null;
+    }
+
+    public static int writeNullableFacing(EnumFacing facing) {
+        return facing != null ? facing.getIndex() : -1;
     }
 
     @SideOnly(Side.CLIENT)
