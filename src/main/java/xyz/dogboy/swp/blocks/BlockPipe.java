@@ -269,7 +269,7 @@ public class BlockPipe extends BlockWoodenVariation {
     }
 
     private boolean handleFluidHandlerActivate(EntityPlayer playerIn, EnumHand hand, TilePipe pipe, IFluidHandlerItem fluidHandler) {
-        IFluidTankProperties tankProperties = pipe.getTankProperties()[0];
+        IFluidTankProperties tankProperties = pipe.getTank().getTankProperties()[0];
         int maxDrain = tankProperties.getCapacity() - (tankProperties.getContents() == null ? 0 : tankProperties.getContents().amount);
         if (maxDrain <= 0) {
             return false;
@@ -280,7 +280,7 @@ public class BlockPipe extends BlockWoodenVariation {
             return false;
         }
 
-        maxDrain = pipe.fill(drained, false);
+        maxDrain = pipe.getTank().fill(drained, false);
         if (maxDrain <= 0) {
             return false;
         }
@@ -290,7 +290,7 @@ public class BlockPipe extends BlockWoodenVariation {
             return false;
         }
 
-        pipe.fill(drained, true);
+        pipe.getTank().fill(drained, true);
         playerIn.setHeldItem(hand, fluidHandler.getContainer());
 
         return true;
