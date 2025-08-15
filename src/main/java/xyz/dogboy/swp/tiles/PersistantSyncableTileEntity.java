@@ -40,7 +40,7 @@ public abstract class PersistantSyncableTileEntity extends TileEntity {
     }
 
     @Override
-    public void onDataPacket(@Nonnull NetworkManager net, SPacketUpdateTileEntity pkt) {
+    public void onDataPacket(@Nonnull NetworkManager net, @Nonnull SPacketUpdateTileEntity pkt) {
         this.handleUpdateTag(pkt.getNbtCompound());
     }
 
