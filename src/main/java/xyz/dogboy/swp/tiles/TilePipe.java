@@ -1,89 +1,234 @@
 package xyz.dogboy.swp.tiles;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ITickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.property.IExtendedBlockState;
-import net.minecraftforge.fluids.Fluid;
-import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.FluidTank;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
-import net.minecraftforge.fluids.capability.FluidTankProperties;
 import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.fluids.capability.IFluidTankProperties;
 
-import xyz.dogboy.swp.Utils;
+import xyz.dogboy.swp.utils.PipePriorityMap;
+import xyz.dogboy.swp.utils.Utils;
 import xyz.dogboy.swp.blocks.BlockWoodenVariation;
 import xyz.dogboy.swp.config.SWPConfig;
 
-public class TilePipe extends PersistantSyncableTileEntity implements ITickable, IFluidHandler, WoodenVariationProvider {
+import java.util.ArrayList;
 
-    private Fluid fluid;
-    private int amount;
-    private boolean extraction;
+public class TilePipe extends PersistantSyncableTileEntity implements ITickable, WoodenVariationProvider {
+    public static final int PRIORITY_BLOCK = -1000;
+    public static final int PRIORITY_PIPE = 0;
 
     private ItemStack cachedBaseBlock;
+    private FluidTank tank;
+    private EnumFacing lastTransfer;
+
+    private final boolean[] from = new boolean[EnumFacing.VALUES.length];
+    private boolean extraction;
+    private boolean clogged = false;
+
+    private boolean syncTank;
+    private boolean syncCloggedFlag;
+    private boolean syncTransfer;
+
+    private int lastRobin;
+    private int ticksSinceLastUpdate;
+
+    public TilePipe() {
+        initFluidTank();
+    }
+
+    protected void initFluidTank() {
+        tank = new FluidTank(SWPConfig.internalVolume) {
+            @Override
+            protected void onContentsChanged() {
+                markDirty();
+            }
+        };
+    }
+
+    @Nonnull
+    public FluidTank getTank() {
+        return tank;
+    }
+
+    @Nullable
+    @Override
+    public SPacketUpdateTileEntity getUpdatePacket() {
+        // minor optimization to avoid sending updates if nothing changed
+        if (requiresSync()) {
+            NBTTagCompound updateTag = getSyncTag();
+            resetSync();
+            return new SPacketUpdateTileEntity(getPos(), 0, updateTag);
+        }
+        return null;
+    }
 
     @Override
     public void update() {
-        if (this.fluid != null && this.fluid.getTemperature() >= 550 && Utils.isBurnable(this.getBaseBlock())) {
+        if (this.getWorld().isRemote) {
+            return;
+        }
+
+        if (this.tank.getFluid() != null && this.tank.getFluid().getFluid().getTemperature() >= 550 && Utils.isBurnable(this.getBaseBlock())) {
             this.getWorld().setBlockState(this.getPos(), Blocks.FIRE.getDefaultState());
             return;
         }
 
-        for (EnumFacing facing : EnumFacing.values()) {
-            BlockPos pos = this.getPos().offset(facing);
-            TileEntity tileEntity = this.getWorld().getTileEntity(pos);
-            if (!this.canConnectTo(tileEntity, facing, false)) {
-                continue;
+        ticksSinceLastUpdate++;
+        boolean fluidMoved = false;
+
+        // Push fluid to connected handlers
+        FluidStack passStack = this.tank.drain(SWPConfig.transferRate, false);
+        if (passStack != null) {
+            PipePriorityMap<Integer, EnumFacing> possibleDirections = new PipePriorityMap<>();
+            IFluidHandler[] fluidHandlers = new IFluidHandler[EnumFacing.VALUES.length];
+
+            for (EnumFacing facing : EnumFacing.values()) {
+                if (!isConnected(facing) || isFrom(facing)) {
+                    continue;
+                }
+                TileEntity tileEntity = world.getTileEntity(pos.offset(facing));
+                if (tileEntity != null && tileEntity.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, facing.getOpposite())) {
+                    IFluidHandler fluidHandler = tileEntity.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, facing.getOpposite());
+                    int priority = PRIORITY_BLOCK;
+                    if (tileEntity instanceof TilePump) {
+                        continue;
+                    }
+                    if (tileEntity instanceof TilePipe) {
+                        priority = ((TilePipe) tileEntity).getPriority(facing.getOpposite());
+                    }
+                    if (isFrom(facing.getOpposite())) {
+                        priority -= 20;
+                    }
+                    if (this.isExtractionEnabled() && !(tileEntity instanceof TilePipe)) {
+                        priority = Integer.MAX_VALUE;
+                    }
+                    possibleDirections.put(priority, facing);
+                    fluidHandlers[facing.getIndex()] = fluidHandler;
+                }
             }
-            IFluidHandler fluidHandler = tileEntity.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, facing.getOpposite());
-            if (fluidHandler == null) {
-                continue;
+
+            for (int key : possibleDirections.keySet()) {
+                ArrayList<EnumFacing> list = possibleDirections.get(key);
+                for (int i = 0; i < list.size(); i++) {
+                    EnumFacing facing = list.get((i + lastRobin) % list.size());
+                    IFluidHandler handler = fluidHandlers[facing.getIndex()];
+                    fluidMoved = pushStack(passStack, facing, handler);
+                    if (lastTransfer != facing) {
+                        syncTransfer = true;
+                        lastTransfer = facing;
+                        markDirty();
+                    }
+                    if (fluidMoved) {
+                        lastRobin++;
+                        break;
+                    }
+                }
+                if (fluidMoved)
+                    break;
             }
-            boolean isPipe = tileEntity instanceof TilePipe;
-            if (this.extraction && !isPipe) {
-                if (tileEntity instanceof TilePump) {
+        }
+        // Try to pump fluid from connected handlers
+        if (this.tank.canFill() && isExtractionEnabled()) {
+            for (EnumFacing facing : EnumFacing.VALUES) {
+                if (!isConnected(facing) || isFrom(facing)) {
                     continue;
                 }
-                int freeSpace = SWPConfig.internalVolume - this.amount;
-                if (freeSpace <= 0) {
+                TileEntity tileEntity = world.getTileEntity(pos.offset(facing));
+                if (tileEntity == null || tileEntity instanceof TilePump || tileEntity instanceof TilePipe) {
                     continue;
                 }
-                FluidStack drainableFluid = this.fluid == null ? fluidHandler.drain(Math.min(SWPConfig.transferRate, freeSpace), true) : fluidHandler.drain(new FluidStack(this.fluid, Math.min(SWPConfig.transferRate, freeSpace)), true);
-                if (drainableFluid == null || drainableFluid.amount <= 0) {
-                    continue;
+                if (tileEntity.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, facing.getOpposite())) {
+                    IFluidHandler fluidHandler = tileEntity.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, facing.getOpposite());
+                    if (fluidHandler != null && pumpStack(fluidHandler)) {
+                        fluidMoved = true;
+                        markDirty();
+                        break;
+                    }
                 }
-                this.amount += drainableFluid.amount;
-                if (this.fluid == null) {
-                    this.fluid = drainableFluid.getFluid();
-                }
-            } else {
-                if (this.fluid == null || this.amount <= 0) {
-                    continue;
-                }
-                if (isPipe && ((TilePipe) tileEntity).amount > this.amount) {
-                    continue;
-                }
-                this.amount -= fluidHandler.fill(new FluidStack(this.fluid, Math.min(SWPConfig.transferRate, this.amount)), true);
             }
+        }
+        // Handle fluid transfer state
+        if (this.tank.getFluidAmount() <= 0) {
+            if (lastTransfer != null && !fluidMoved) {
+                syncTransfer = true;
+                lastTransfer = null;
+                markDirty();
+            }
+            fluidMoved = true;
+            if (ticksSinceLastUpdate > 20) {
+                ticksSinceLastUpdate = 0;
+                resetFrom();
+            }
+        }
+        if (clogged == fluidMoved) {
+            clogged = !fluidMoved;
+            syncCloggedFlag = true;
+            markDirty();
         }
     }
 
-    private FluidStack getFluidStack() {
-        if (this.amount <= 0) {
-            return null;
+    public int getPriority(EnumFacing facing) {
+        return PRIORITY_PIPE;
+    }
+
+    private boolean isConnected(EnumFacing facing) {
+        BlockPos pos = this.getPos().offset(facing);
+        TileEntity tileEntity = this.getWorld().getTileEntity(pos);
+        return this.canConnectTo(tileEntity, facing, false);
+    }
+
+    private boolean isFrom(EnumFacing facing) {
+        return this.from[facing.getIndex()];
+    }
+
+    private void resetFrom() {
+        for (EnumFacing facing : EnumFacing.VALUES) {
+            setFrom(facing, false);
         }
-        return new FluidStack(this.fluid, this.amount);
+    }
+
+    private void setFrom(EnumFacing facing, boolean flag) {
+        from[facing.getIndex()] = flag;
+    }
+
+    private boolean pushStack(FluidStack passStack, EnumFacing facing, IFluidHandler handler) {
+        int added = handler.fill(passStack, false);
+        if (added > 0) {
+            handler.fill(passStack, true);
+            this.tank.drain(added, true);
+            passStack.amount -= added;
+            return passStack.amount <= 0;
+        }
+
+        if (isFrom(facing))
+            setFrom(facing, true);
+        return false;
+    }
+
+    private boolean pumpStack(IFluidHandler fluidHandler) {
+        int drainAmount = Math.min(SWPConfig.transferRate, this.tank.getCapacity() - this.tank.getFluidAmount());
+        FluidStack drained = fluidHandler.drain(drainAmount, false);
+        if (drained != null && drained.amount > 0) {
+            if (this.tank.fill(drained, false) > 0) {
+                int filled = this.tank.fill(drained, true);
+                fluidHandler.drain(filled, true);
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean isExtractionEnabled() {
@@ -95,108 +240,70 @@ public class TilePipe extends PersistantSyncableTileEntity implements ITickable,
         this.triggerUpdate();
     }
 
-    @Override
-    public boolean hasCapability(Capability<?> capability, @Nullable EnumFacing facing) {
-        return capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY;
+    protected void resetSync() {
+        syncTank = false;
+        syncCloggedFlag = false;
+        syncTransfer = false;
     }
 
-    @Nullable
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T> T getCapability(Capability<T> capability, @Nullable EnumFacing facing) {
-        if (capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY) {
-            return (T) this;
-        }
-        return null;
+    protected boolean requiresSync() {
+        return syncTank || syncCloggedFlag || syncTransfer;
     }
 
-    @Override
-    public IFluidTankProperties[] getTankProperties() {
-        return new IFluidTankProperties[]{new FluidTankProperties(this.getFluidStack(), SWPConfig.internalVolume)};
-    }
-
-    @Override
-    public int fill(FluidStack resource, boolean doFill) {
-        if (resource == null || resource.amount <= 0) {
-            return 0;
-        }
-
-        FluidStack current = this.getFluidStack();
-        int maxFill = current == null ? Math.min(SWPConfig.internalVolume, resource.amount) : current.isFluidEqual(resource) ? Math.min(SWPConfig.internalVolume - current.amount, resource.amount) : 0;
-
-        if (!doFill) {
-            return maxFill;
-        }
-        if (current == null) {
-            this.fluid = resource.getFluid();
-            this.amount = resource.amount;
-            this.triggerUpdate();
-            return resource.amount;
-        }
-        if (current.isFluidEqual(resource)) {
-            this.amount += maxFill;
-            this.triggerUpdate();
-            return maxFill;
-        }
-        return 0;
-    }
-
-    @Nullable
-    @Override
-    public FluidStack drain(int maxDrain, boolean doDrain) {
-        if (maxDrain <= 0) {
-            return null;
-        }
-        FluidStack current = this.getFluidStack();
-        if (current == null) {
-            return null;
-        }
-        return this.drain(new FluidStack(current.getFluid(), maxDrain), doDrain);
-    }
-
-    @Nullable
-    @Override
-    public FluidStack drain(FluidStack resource, boolean doDrain) {
-        if (resource == null || resource.amount <= 0) {
-            return null;
-        }
-        FluidStack current = this.getFluidStack();
-        if (current == null) {
-            return null;
-        }
-        int maxDrain = Math.min(SWPConfig.transferRate, Math.min(current.amount, resource.amount));
-        if (!doDrain) {
-            return new FluidStack(current.getFluid(), maxDrain);
-        }
-        this.amount -= maxDrain;
-        this.triggerUpdate();
-        return new FluidStack(current.getFluid(), maxDrain);
+    protected NBTTagCompound getSyncTag() {
+        NBTTagCompound compound = new NBTTagCompound();
+        if (syncTank)
+            writeTank(compound);
+        if (syncCloggedFlag)
+            writeCloggedFlag(compound);
+        if (syncTransfer)
+            writeLastTransfer(compound);
+        return compound;
     }
 
     @Override
-    protected void writeData(NBTTagCompound tagCompound) {
-        FluidStack current = this.getFluidStack();
-        if (current != null) {
-            tagCompound.setString("FluidName", FluidRegistry.getFluidName(current.getFluid()));
-            tagCompound.setInteger("FluidAmount", current.amount);
-        }
-        tagCompound.setBoolean("CanExtract", this.extraction);
+    public void writeData(@Nonnull NBTTagCompound tag) {
+        writeTank(tag);
+        writeCloggedFlag(tag);
+        writeLastTransfer(tag);
+        writeExtraction(tag);
+        for (EnumFacing facing : EnumFacing.VALUES)
+            tag.setBoolean("from" + facing.getIndex(), from[facing.getIndex()]);
+        tag.setInteger("lastRobin", lastRobin);
+    }
+
+    private void writeCloggedFlag(NBTTagCompound tag) {
+        tag.setBoolean("clogged", clogged);
+    }
+
+    private void writeLastTransfer(NBTTagCompound tag) {
+        tag.setInteger("lastTransfer", Utils.writeNullableFacing(lastTransfer));
+    }
+
+    private void writeTank(NBTTagCompound tag) {
+        tag.setTag("tank", tank.writeToNBT(new NBTTagCompound()));
+    }
+
+    private void writeExtraction(NBTTagCompound tag) {
+        tag.setBoolean("CanExtract", extraction);
     }
 
     @Override
-    protected void readData(NBTTagCompound tagCompound) {
-        if (tagCompound.hasKey("FluidName") && tagCompound.hasKey("FluidAmount")) {
-            String fluidName = tagCompound.getString("FluidName");
-            int fluidAmount = tagCompound.getInteger("FluidAmount");
-
-            Fluid fluid = FluidRegistry.getFluid(fluidName);
-            if (fluid == null) {
-                return;
-            }
-            this.fluid = fluid;
-            this.amount = fluidAmount;
+    public void readData(@Nonnull NBTTagCompound tag) {
+        if (tag.hasKey("clogged"))
+            clogged = tag.getBoolean("clogged");
+        if (tag.hasKey("tank"))
+            tank.readFromNBT(tag.getCompoundTag("tank"));
+        if (tag.hasKey("lastTransfer"))
+            lastTransfer = Utils.readNullableFacing(tag.getInteger("lastTransfer"));
+        for (EnumFacing facing : EnumFacing.VALUES)
+            if (tag.hasKey("from" + facing.getIndex()))
+                from[facing.getIndex()] = tag.getBoolean("from" + facing.getIndex());
+        if (tag.hasKey("lastRobin"))
+            lastRobin = tag.getInteger("lastRobin");
+        if (tag.hasKey("CanExtract")) {
+            this.extraction = tag.getBoolean("CanExtract");
         }
-        this.extraction = tagCompound.getBoolean("CanExtract");
     }
 
     public ItemStack getBaseBlock() {
@@ -248,5 +355,20 @@ public class TilePipe extends PersistantSyncableTileEntity implements ITickable,
             return otherPipe.getBaseBlock().isItemEqual(this.getBaseBlock());
         }
         return tileEntity.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, direction.getOpposite());
+    }
+
+    @Override
+    public boolean hasCapability(@Nonnull Capability<?> capability, @Nullable EnumFacing facing) {
+        return capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY;
+    }
+
+    @Nullable
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T getCapability(@Nonnull Capability<T> capability, @Nullable EnumFacing facing) {
+        if (capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY) {
+            return (T) this.getTank();
+        }
+        return null;
     }
 }
