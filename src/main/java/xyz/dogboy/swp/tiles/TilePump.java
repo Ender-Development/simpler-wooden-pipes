@@ -1,6 +1,6 @@
 package xyz.dogboy.swp.tiles;
 
-import java.util.Optional;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.block.BlockStaticLiquid;
@@ -20,6 +20,7 @@ import net.minecraftforge.fluids.capability.FluidTankProperties;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidTankProperties;
 
+import xyz.dogboy.swp.blocks.BlockWoodenVariation;
 import xyz.dogboy.swp.config.SWPConfig;
 
 public class TilePump extends PersistantSyncableTileEntity implements ITickable, IFluidHandler, WoodenVariationProvider {
@@ -50,21 +51,20 @@ public class TilePump extends PersistantSyncableTileEntity implements ITickable,
         this.fillInternal(SWPConfig.pumpRate);
 
         if (this.amount > 0) {
-            this.getPipeAbove().ifPresent(pipe ->
-                    this.amount -= pipe.fill(new FluidStack(FluidRegistry.WATER, Math.min(SWPConfig.transferRate, this.amount)), true)
-            );
+            BlockPos offsetPos = this.getPos().offset(EnumFacing.UP);
+            TileEntity tileEntity = this.getWorld().getTileEntity(offsetPos);
+            if (tileEntity != null && tileEntity.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, EnumFacing.DOWN)) {
+                IFluidHandler fluidHandler = tileEntity.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, EnumFacing.DOWN);
+                if (fluidHandler != null) {
+                    this.amount -= fluidHandler.fill(new FluidStack(FluidRegistry.WATER, Math.min(SWPConfig.transferRate, this.amount)), true);
+                }
+            }
         }
     }
 
     private boolean isStaticWater(BlockPos pos) {
         IBlockState blockState = this.getWorld().getBlockState(pos);
         return blockState.getBlock() instanceof BlockStaticLiquid && blockState.getMaterial() == Material.WATER;
-    }
-
-    private Optional<TilePipe> getPipeAbove() {
-        return Optional.ofNullable(this.getWorld().getTileEntity(this.getPos().up()))
-                .filter(tileEntity -> tileEntity instanceof TilePipe)
-                .map(tileEntity -> (TilePipe) tileEntity);
     }
 
     private FluidStack getFluidStack() {
@@ -76,14 +76,14 @@ public class TilePump extends PersistantSyncableTileEntity implements ITickable,
     }
 
     @Override
-    public boolean hasCapability(Capability<?> capability, @Nullable EnumFacing facing) {
+    public boolean hasCapability(@Nonnull Capability<?> capability, @Nullable EnumFacing facing) {
         return capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY && (facing == null || facing == EnumFacing.UP);
     }
 
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T getCapability(Capability<T> capability, @Nullable EnumFacing facing) {
+    public <T> T getCapability(@Nonnull Capability<T> capability, @Nullable EnumFacing facing) {
         if (capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY && (facing == null || facing == EnumFacing.UP)) {
             return (T) this;
         }
@@ -93,14 +93,13 @@ public class TilePump extends PersistantSyncableTileEntity implements ITickable,
 
     @Override
     public IFluidTankProperties[] getTankProperties() {
-        return new IFluidTankProperties[] { new FluidTankProperties(this.getFluidStack(), SWPConfig.internalVolume) };
+        return new IFluidTankProperties[]{new FluidTankProperties(this.getFluidStack(), SWPConfig.internalVolume)};
     }
 
-    private int fillInternal(int amount) {
+    private void fillInternal(int amount) {
         int maxFill = Math.min(SWPConfig.internalVolume - this.amount, amount);
         this.amount += maxFill;
         this.triggerUpdate();
-        return maxFill;
     }
 
     @Override
@@ -157,8 +156,8 @@ public class TilePump extends PersistantSyncableTileEntity implements ITickable,
         if (up instanceof WoodenVariationProvider) {
             return ((WoodenVariationProvider) up).writeExtendedState(state);
         }
-
-        return state;
+        String texture = this.getTileData().getString("Texture");
+        return state.withProperty(BlockWoodenVariation.TEXTURE, texture.isEmpty() ? "minecraft:blocks/planks_oak" : texture);
     }
 
 }
