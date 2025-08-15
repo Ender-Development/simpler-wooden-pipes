@@ -10,7 +10,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import xyz.dogboy.swp.Utils;
+import xyz.dogboy.swp.utils.Utils;
 import xyz.dogboy.swp.proxy.CommonProxy;
 
 import javax.annotation.Nonnull;
@@ -26,7 +26,7 @@ public class WoodenVariationItemOverrideList extends ItemOverrideList {
 
     @Nonnull
     @Override
-    public IBakedModel handleItemState(@Nonnull IBakedModel originalModel, ItemStack stack, @Nullable World world, @Nullable EntityLivingBase entity) {
+    public IBakedModel handleItemState(@Nonnull IBakedModel originalModel, @Nonnull ItemStack stack, @Nullable World world, @Nullable EntityLivingBase entity) {
         ItemStack baseBlock;
         if (stack.hasTagCompound()) {
             baseBlock = new ItemStack(stack.getTagCompound().getCompoundTag("BaseBlock"));

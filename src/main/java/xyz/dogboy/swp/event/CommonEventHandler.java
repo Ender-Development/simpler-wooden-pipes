@@ -14,7 +14,7 @@ import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.oredict.OreIngredient;
 import xyz.dogboy.simplewoodenpipes.Tags;
 import xyz.dogboy.swp.Registry;
-import xyz.dogboy.swp.Utils;
+import xyz.dogboy.swp.utils.Utils;
 import xyz.dogboy.swp.blocks.BlockPipe;
 import xyz.dogboy.swp.config.SWPConfig;
 import xyz.dogboy.swp.items.ItemBlockWoodenVariation;

@@ -10,7 +10,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.NonNullList;
 import net.minecraft.world.World;
 import xyz.dogboy.simplewoodenpipes.Tags;
-import xyz.dogboy.swp.Utils;
+import xyz.dogboy.swp.utils.Utils;
 import xyz.dogboy.swp.config.SWPConfig;
 import xyz.dogboy.swp.proxy.CommonProxy;
 
